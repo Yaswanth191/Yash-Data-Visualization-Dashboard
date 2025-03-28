@@ -1,0 +1,1836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yash's Data Visualization Dashboard</title>
+    <!-- Load libraries -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.0.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.2.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@1.2.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- CSS files -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #6e8efb;
+            --secondary-color: #4facfe;
+            --danger-color: #ff758c;
+            --success-color: #a8ff78;
+            --info-color: #667eea;
+            --dark-color: #434343;
+            --light-color: #f8f9fa;
+            --portfolio-bg: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-color);
+            color: #333;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, var(--primary-color), #a777e3);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dashboard-header::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%);
+            transform: rotate(30deg);
+        }
+        
+        /* File Management Section */
+        .file-management-section {
+            background: var(--portfolio-bg);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .file-management-section::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color), var(--success-color));
+        }
+        
+        .file-management-section h3 {
+            color: var(--dark-color);
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+        
+        .file-management-section h3 i {
+            margin-right: 12px;
+            color: var(--primary-color);
+        }
+        
+        .file-upload-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .file-upload-box {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            background: white;
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload-box:hover {
+            border-color: var(--primary-color);
+            background: rgba(110, 142, 251, 0.05);
+        }
+        
+        .file-upload-box i {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        .file-list {
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        
+        .file-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .file-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-file {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .progress {
+            height: 8px;
+            margin-top: 10px;
+        }
+        
+        /* Enhanced Portfolio Button */
+        .btn-portfolio {
+            background: linear-gradient(135deg, var(--dark-color), #000000);
+            border: none;
+            font-weight: 500;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 10px 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-portfolio:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        .btn-portfolio::after {
+            content: "";
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%);
+            transform: rotate(30deg);
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+        
+        .btn-portfolio:hover::after {
+            opacity: 1;
+        }
+        
+        .btn-portfolio i {
+            margin-right: 8px;
+            transition: transform 0.3s ease;
+        }
+        
+        .btn-portfolio:hover i {
+            transform: scale(1.1);
+        }
+        
+        /* Loading state for buttons */
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+        }
+        
+        .btn-loading::after {
+            content: "";
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+            margin-left: 8px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Chart containers */
+        .chart-container {
+            position: relative;
+            height: 320px;
+            width: 100%;
+        }
+        
+        .large-chart-container {
+            height: 450px;
+        }
+        
+        /* Cards */
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 25px;
+            border: none;
+            transition: all 0.3s ease;
+            background-color: white;
+            height: 100%;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+        
+        .card-title {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-title i {
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+        
+        /* Filter section */
+        .filter-section {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .filter-section h5 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+        
+        .filter-section h5 i {
+            margin-right: 10px;
+        }
+        
+        /* Stat cards */
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .stat-card:hover {
+            transform: scale(1.03);
+        }
+        
+        .stat-card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+        
+        .stat-card p {
+            font-size: 0.9rem;
+            margin-bottom: 0;
+        }
+        
+        /* Data table */
+        .data-table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        .data-table th {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 15px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+        }
+        
+        .data-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .data-table tr:hover {
+            background-color: rgba(110, 142, 251, 0.05);
+        }
+        
+        /* Delete button styles */
+        .btn-delete-all {
+            background: linear-gradient(135deg, var(--danger-color), #ff416c);
+            color: white;
+            border: none;
+            font-weight: 500;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(255, 0, 0, 0.1);
+        }
+        
+        .btn-delete-all:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(255, 0, 0, 0.15);
+            color: white;
+        }
+        
+        .btn-delete-all:active {
+            transform: translateY(0);
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 992px) {
+            .chart-container {
+                height: 280px;
+            }
+            
+            .large-chart-container {
+                height: 350px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .file-upload-container {
+                flex-direction: column;
+            }
+            
+            .stat-card h3 {
+                font-size: 1.5rem;
+            }
+            
+            .chart-container {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4" id="app">
+        <!-- Header Section -->
+        <div class="dashboard-header fade-in">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div>
+                    <h1><i class="fas fa-chart-line"></i> Yash's Data Visualization Dashboard</h1>
+                    <p class="mb-0">Analyzing large datasets with interactive visualizations</p>
+                </div>
+                <div class="mt-2 mt-md-0">
+                    <button class="btn btn-portfolio text-white">
+                        <i class="fas fa-user-tie"></i> View My Portfolio
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- File Management Section -->
+        <div class="file-management-section fade-in">
+            <h3><i class="fas fa-file-upload"></i> File Management</h3>
+            <div class="file-upload-container">
+                <div class="file-upload-box" id="dropZone">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h5>Drag & Drop files here or click to browse</h5>
+                    <p class="text-muted">Supports JSON, CSV, and Excel files</p>
+                    <input type="file" id="fileInput" class="d-none" accept=".json,.csv,.xlsx,.xls">
+                    <button class="btn btn-primary mt-2" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-folder-open"></i> Select Files
+                    </button>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success flex-grow-1" onclick="uploadSelectedFiles()">
+                        <i class="fas fa-upload"></i> Upload Files
+                    </button>
+                    <button class="btn btn-danger" onclick="clearSelectedFiles()">
+                        <i class="fas fa-trash"></i> Clear
+                    </button>
+                </div>
+                
+                <!-- Delete All Data Button -->
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-delete-all flex-grow-1" onclick="confirmDelete()">
+                        <i class="fas fa-trash-alt"></i> Delete All Data
+                    </button>
+                    <button class="btn btn-info" onclick="showUploadModal()">
+                        <i class="fas fa-file-import"></i> Insert New Data
+                    </button>
+                </div>
+                
+                <div class="progress" style="display: none;" id="uploadProgress">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" style="width: 0%"></div>
+                </div>
+                
+                <div class="file-list">
+                    <h5>Selected Files</h5>
+                    <div id="selectedFilesList">
+                        <p class="text-muted">No files selected</p>
+                    </div>
+                </div>
+                
+                <div class="file-list">
+                    <h5>Uploaded Files</h5>
+                    <div id="uploadedFilesList">
+                        <p class="text-muted">No files uploaded yet</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Control Buttons -->
+        <div class="row mb-4 fade-in">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-md-3 col-6">
+                                <button class="btn btn-upload text-white w-100 h-100 py-2" onclick="initDatabase()">
+                                    <i class="fas fa-database"></i> Initialize Data
+                                </button>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <button class="btn btn-custom text-white w-100 h-100 py-2" onclick="showUploadModal()">
+                                    <i class="fas fa-file-import"></i> Upload Data
+                                </button>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <button class="btn btn-refresh text-white w-100 h-100 py-2" onclick="fetchData()">
+                                    <i class="fas fa-sync-alt"></i> Refresh Data
+                                </button>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <button class="btn btn-delete text-white w-100 h-100 py-2" onclick="confirmDelete()">
+                                    <i class="fas fa-trash-alt"></i> Delete Data
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="row fade-in">
+            <!-- Filters Column -->
+            <div class="col-lg-3">
+                <div class="filter-section">
+                    <h5><i class="fas fa-sliders-h"></i> Data Filters</h5>
+                    
+                    <!-- Year Filter -->
+                    <div class="mb-3">
+                        <label class="form-label">Year Range</label>
+                        <select class="form-select" id="yearFilter" multiple>
+                            <option value="2020">2020</option>
+                            <option value="2021">2021</option>
+                            <option value="2022">2022</option>
+                            <option value="2023">2023</option>
+                            <option value="2024">2024</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Topic Filter -->
+                    <div class="mb-3">
+                        <label class="form-label">Topics</label>
+                        <select class="form-select" id="topicFilter" multiple></select>
+                    </div>
+                    
+                    <!-- Sector Filter -->
+                    <div class="mb-3">
+                        <label class="form-label">Sectors</label>
+                        <select class="form-select" id="sectorFilter" multiple></select>
+                    </div>
+                    
+                    <!-- Region Filter -->
+                    <div class="mb-3">
+                        <label class="form-label">Regions</label>
+                        <select class="form-select" id="regionFilter" multiple></select>
+                    </div>
+                    
+                    <!-- Country Filter -->
+                    <div class="mb-3">
+                        <label class="form-label">Countries</label>
+                        <select class="form-select" id="countryFilter" multiple></select>
+                    </div>
+                    
+                    <!-- Source Filter -->
+                    <div class="mb-3">
+                        <label class="form-label">Sources</label>
+                        <select class="form-select" id="sourceFilter" multiple></select>
+                    </div>
+                    
+                    <!-- PEST Filter -->
+                    <div class="mb-3">
+                        <label class="form-label">PEST Analysis</label>
+                        <select class="form-select" id="pestFilter" multiple>
+                            <option value="Political">Political</option>
+                            <option value="Economic">Economic</option>
+                            <option value="Social">Social</option>
+                            <option value="Technological">Technological</option>
+                        </select>
+                    </div>
+                    
+                    <!-- SWOT Filter -->
+                    <div class="mb-3">
+                        <label class="form-label">SWOT Analysis</label>
+                        <select class="form-select" id="swotFilter" multiple>
+                            <option value="Strength">Strength</option>
+                            <option value="Weakness">Weakness</option>
+                            <option value="Opportunity">Opportunity</option>
+                            <option value="Threat">Threat</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn btn-primary w-100 mt-3" onclick="applyFilters()">
+                        <i class="fas fa-filter"></i> Apply Filters
+                    </button>
+                    <button class="btn btn-outline-secondary w-100 mt-2" onclick="resetFilters()">
+                        <i class="fas fa-undo"></i> Reset All
+                    </button>
+                </div>
+
+                <!-- Statistics Cards -->
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-chart-pie"></i> Key Metrics</h5>
+                        <div class="row mt-3 g-2" id="statsContainer">
+                            <!-- Stats will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Column -->
+            <div class="col-lg-9">
+                <!-- First Row of Charts -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="fas fa-fire"></i> Intensity Analysis</h5>
+                                <div class="chart-container">
+                                    <canvas id="intensityChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="fas fa-bullseye"></i> Likelihood Distribution</h5>
+                                <div class="chart-container">
+                                    <canvas id="likelihoodChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Second Row of Charts -->
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="fas fa-star"></i> Relevance Trends</h5>
+                                <div class="chart-container">
+                                    <canvas id="relevanceChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="fas fa-globe-americas"></i> Country Distribution</h5>
+                                <div class="chart-container">
+                                    <canvas id="countryChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Large Chart -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="fas fa-chart-bar"></i> Topic Frequency</h5>
+                                <div class="large-chart-container">
+                                    <canvas id="topicChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Preview Table -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title"><i class="fas fa-table"></i> Data Preview</h5>
+                                <div class="data-table-container">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Title</th>
+                                                <th>Topic</th>
+                                                <th>Country</th>
+                                                <th>Intensity</th>
+                                                <th>Likelihood</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="dataPreview">
+                                            <tr>
+                                                <td colspan="5" class="text-center py-4">No data to display</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="mt-3 text-end">
+                                    <button class="btn btn-sm btn-outline-primary" id="loadMoreBtn" style="display: none;">
+                                        <i class="fas fa-arrow-down"></i> Load More
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-file-upload"></i> Upload Dataset</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="uploadForm">
+                        <div class="mb-3">
+                            <label for="fileInput" class="form-label">Select JSON File</label>
+                            <input class="form-control" type="file" id="fileInput" accept=".json" required>
+                            <div class="form-text">Supports files up to 50MB in size</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="uploadOption" class="form-label">Upload Mode</label>
+                            <select class="form-select" id="uploadOption">
+                                <option value="replace">Replace Existing Data</option>
+                                <option value="append">Append to Existing Data</option>
+                            </select>
+                        </div>
+                        <div class="progress mb-3" style="height: 20px; display: none;" id="uploadProgressBar">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <div id="uploadStatus"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="uploadFile()">
+                        <span id="uploadButtonText">Upload</span>
+                        <span class="loading-spinner" id="uploadSpinner" style="display: none;"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Confirm Deletion</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>This action will permanently delete all data from the database.</p>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-circle"></i> Warning: This cannot be undone!
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="confirmCheck">
+                        <label class="form-check-label" for="confirmCheck">
+                            I understand this will delete all <span id="recordCount">0</span> records
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn" disabled>
+                        <i class="fas fa-trash-alt"></i> Delete All Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        const API_BASE_URL = 'http://localhost:5000';
+        let intensityChart, likelihoodChart, relevanceChart, countryChart, topicChart;
+        let allData = [];
+        let filteredData = [];
+        let uniqueValues = {
+            topics: new Set(),
+            sectors: new Set(),
+            regions: new Set(),
+            countries: new Set(),
+            sources: new Set()
+        };
+        let deleteModal = null;
+        let uploadModal = null;
+        let previewPage = 1;
+        const previewPageSize = 10;
+        let isFetchingData = false;
+        let selectedFiles = [];
+
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize modals
+            deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            uploadModal = new bootstrap.Modal(document.getElementById('uploadModal'));
+            
+            // Initialize select2 for all multi-select filters
+            $('.form-select').select2({
+                placeholder: "Select values",
+                allowClear: true,
+                width: '100%'
+            });
+
+            // Enhanced portfolio button functionality
+            const portfolioBtn = document.querySelector('.btn-portfolio');
+            if (portfolioBtn) {
+                portfolioBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const portfolioUrl = 'http://51.20.70.6:8501/';
+                    
+                    // Add loading state
+                    this.classList.add('btn-loading');
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner"></i> Opening Portfolio...';
+                    
+                    // Open in new tab after short delay for visual feedback
+                    setTimeout(() => {
+                        window.open(portfolioUrl, '_blank');
+                        this.classList.remove('btn-loading');
+                        this.innerHTML = originalText;
+                    }, 500);
+                });
+            }
+
+            // Setup delete confirmation
+            document.getElementById('confirmCheck').addEventListener('change', function() {
+                document.getElementById('confirmDeleteBtn').disabled = !this.checked;
+            });
+
+            document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+                deleteModal.hide();
+                deleteData();
+            });
+
+            // Setup load more button
+            document.getElementById('loadMoreBtn').addEventListener('click', function() {
+                previewPage++;
+                updateDataPreview();
+            });
+
+            // File input change handler
+            document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+            
+            // Drag and drop setup
+            const dropZone = document.getElementById('dropZone');
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = 'var(--primary-color)';
+                dropZone.style.backgroundColor = 'rgba(110, 142, 251, 0.1)';
+            });
+            
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.style.borderColor = '#ccc';
+                dropZone.style.backgroundColor = 'white';
+            });
+            
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#ccc';
+                dropZone.style.backgroundColor = 'white';
+                
+                if (e.dataTransfer.files.length) {
+                    handleFileSelect({ target: { files: e.dataTransfer.files } });
+                }
+            });
+
+            // Fetch initial data
+            fetchData();
+        });
+
+        // Handle file selection
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            selectedFiles = Array.from(files);
+            updateSelectedFilesList();
+        }
+
+        // Update selected files list
+        function updateSelectedFilesList() {
+            const filesList = document.getElementById('selectedFilesList');
+            
+            if (selectedFiles.length === 0) {
+                filesList.innerHTML = '<p class="text-muted">No files selected</p>';
+                return;
+            }
+            
+            let html = '';
+            selectedFiles.forEach((file, index) => {
+                const fileSize = (file.size / 1024).toFixed(2); // KB
+                html += `
+                    <div class="file-item">
+                        <div class="file-name">
+                            <i class="fas fa-file-alt"></i>
+                            <div>
+                                <div>${file.name}</div>
+                                <small class="text-muted">${fileSize} KB</small>
+                            </div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="btn btn-file btn-danger" onclick="removeFile(${index})">
+                                <i class="fas fa-times"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            filesList.innerHTML = html;
+        }
+
+        // Remove file from selection
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateSelectedFilesList();
+        }
+
+        // Clear all selected files
+        function clearSelectedFiles() {
+            selectedFiles = [];
+            document.getElementById('fileInput').value = '';
+            updateSelectedFilesList();
+        }
+
+        // Upload selected files
+        async function uploadSelectedFiles() {
+            if (selectedFiles.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No files selected',
+                    text: 'Please select files to upload first'
+                });
+                return;
+            }
+            
+            const progressBar = document.getElementById('uploadProgress');
+            const progressBarInner = progressBar.querySelector('.progress-bar');
+            
+            progressBar.style.display = 'block';
+            progressBarInner.style.width = '0%';
+            
+            try {
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    const file = selectedFiles[i];
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    // Update progress UI
+                    progressBarInner.style.width = `${(i / selectedFiles.length) * 100}%`;
+                    
+                    try {
+                        const response = await axios.post(`${API_BASE_URL}/api/upload`, formData, {
+                            headers: {
+                                'Content-Type': 'multipart/form-data'
+                            }
+                        });
+                        
+                        // Update uploaded files list
+                        updateUploadedFilesList(file.name, 'success', response.data.message);
+                    } catch (error) {
+                        console.error(`Error uploading file ${file.name}:`, error);
+                        updateUploadedFilesList(file.name, 'error', error.response?.data?.message || 'Upload failed');
+                    }
+                }
+                
+                // Complete progress
+                progressBarInner.style.width = '100%';
+                setTimeout(() => {
+                    progressBar.style.display = 'none';
+                }, 1000);
+                
+                // Show success message
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Upload Complete',
+                    text: 'All files have been uploaded successfully'
+                });
+                
+                // Refresh data after all uploads
+                fetchData();
+            } catch (error) {
+                console.error('Upload error:', error);
+                progressBar.style.display = 'none';
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Upload Failed',
+                    text: 'Error uploading files. Check console for details.'
+                });
+            }
+        }
+
+        // Update uploaded files list
+        function updateUploadedFilesList(filename, status, message) {
+            const uploadedList = document.getElementById('uploadedFilesList');
+            
+            // Remove "no files" message if it exists
+            if (uploadedList.querySelector('p.text-muted')) {
+                uploadedList.innerHTML = '';
+            }
+            
+            const statusClass = status === 'success' ? 'text-success' : 'text-danger';
+            const statusIcon = status === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+            
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <div class="file-name">
+                    <i class="fas ${statusIcon} ${statusClass}"></i>
+                    <div>
+                        <div>${filename}</div>
+                        <small class="${statusClass}">${message}</small>
+                    </div>
+                </div>
+            `;
+            
+            uploadedList.appendChild(fileItem);
+        }
+
+        // Show upload modal
+        function showUploadModal() {
+            document.getElementById('uploadStatus').innerHTML = '';
+            document.getElementById('uploadProgressBar').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+            uploadModal.show();
+        }
+
+        // Upload file function
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadOption = document.getElementById('uploadOption');
+            const uploadStatus = document.getElementById('uploadStatus');
+            const progressBar = document.getElementById('uploadProgressBar');
+            const progressBarInner = progressBar.querySelector('.progress-bar');
+            const uploadButtonText = document.getElementById('uploadButtonText');
+            const uploadSpinner = document.getElementById('uploadSpinner');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                uploadStatus.innerHTML = '<div class="alert alert-danger">Please select a file first</div>';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            if (!file.name.endsWith('.json')) {
+                uploadStatus.innerHTML = '<div class="alert alert-danger">Only JSON files are allowed</div>';
+                return;
+            }
+
+            // Check file size (limit to 50MB)
+            if (file.size > 50 * 1024 * 1024) {
+                uploadStatus.innerHTML = '<div class="alert alert-danger">File size exceeds 50MB limit</div>';
+                return;
+            }
+
+            try {
+                // Show loading state
+                uploadButtonText.style.display = 'none';
+                uploadSpinner.style.display = 'inline-block';
+                progressBar.style.display = 'block';
+                uploadStatus.innerHTML = '<div class="alert alert-info">Processing file...</div>';
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('option', uploadOption.value);
+
+                const response = await axios.post(`${API_BASE_URL}/api/upload`, formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    },
+                    onUploadProgress: function(progressEvent) {
+                        if (progressEvent.total > 0) {
+                            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                            progressBarInner.style.width = percentCompleted + '%';
+                            progressBarInner.setAttribute('aria-valuenow', percentCompleted);
+                        }
+                    }
+                });
+
+                uploadStatus.innerHTML = `
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> ${response.data.message}<br>
+                        Loaded ${response.data.count.toLocaleString()} records
+                    </div>
+                `;
+                
+                // Refresh data after successful upload
+                setTimeout(() => {
+                    uploadModal.hide();
+                    fetchData();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Upload error:', error);
+                let errorMessage = 'Error uploading file';
+                
+                if (error.response) {
+                    errorMessage = error.response.data.error || 
+                                  error.response.data.message || 
+                                  `Server error: ${error.response.status}`;
+                } else if (error.request) {
+                    errorMessage = 'No response from server. Is the backend running?';
+                }
+                
+                uploadStatus.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle"></i> <strong>Upload failed:</strong> ${errorMessage}
+                    </div>
+                `;
+            } finally {
+                uploadButtonText.style.display = 'inline';
+                uploadSpinner.style.display = 'none';
+            }
+        }
+
+        // Show delete confirmation
+        function confirmDelete() {
+            if (allData.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'No Data',
+                    text: 'There is no data to delete'
+                });
+                return;
+            }
+            
+            document.getElementById('recordCount').textContent = allData.length.toLocaleString();
+            document.getElementById('confirmCheck').checked = false;
+            document.getElementById('confirmDeleteBtn').disabled = true;
+            deleteModal.show();
+        }
+
+        // Fetch data from backend
+        async function fetchData() {
+            if (isFetchingData) return;
+            isFetchingData = true;
+            
+            try {
+                showLoading();
+                
+                // Try to get count first (with fallback)
+                let totalRecords = 1000; // Default fallback
+                try {
+                    const countResponse = await axios.get(`${API_BASE_URL}/api/data/count`);
+                    if (countResponse.data?.count) {
+                        totalRecords = countResponse.data.count;
+                    }
+                } catch (countError) {
+                    console.warn("Couldn't fetch record count, using default:", countError);
+                    // If count endpoint fails, try to get all data at once
+                    try {
+                        const response = await axios.get(`${API_BASE_URL}/api/data`);
+                        allData = response.data;
+                        filteredData = [...allData];
+                        updateCharts(filteredData);
+                        updateStats();
+                        updateDataPreview();
+                        populateFilters();
+                        return;
+                    } catch (error) {
+                        console.error('Error fetching data:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Failed to fetch data. Check console for details.'
+                        });
+                        return;
+                    }
+                }
+                
+                // If count was successful, fetch in chunks
+                const chunkSize = 5000;
+                let fetchedData = [];
+                
+                for (let offset = 0; offset < totalRecords; offset += chunkSize) {
+                    try {
+                        const response = await axios.get(`${API_BASE_URL}/api/data`, {
+                            params: { limit: chunkSize, offset }
+                        });
+                        fetchedData = fetchedData.concat(response.data);
+                        updateLoadingProgress(Math.min(offset + chunkSize, totalRecords), totalRecords);
+                    } catch (chunkError) {
+                        console.error('Error fetching data chunk:', chunkError);
+                        // If chunk fails, try to get remaining data at once as fallback
+                        try {
+                            const response = await axios.get(`${API_BASE_URL}/api/data`, {
+                                params: { offset }
+                            });
+                            fetchedData = fetchedData.concat(response.data);
+                            break;
+                        } catch (finalError) {
+                            console.error('Final fallback failed:', finalError);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Failed to fetch all data. Check console for details.'
+                            });
+                            break;
+                        }
+                    }
+                }
+                
+                allData = fetchedData;
+                filteredData = [...allData];
+                
+                updateCharts(filteredData);
+                updateStats();
+                updateDataPreview();
+                populateFilters();
+                
+            } catch (error) {
+                console.error('Error in fetchData:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to fetch data. Check console for details.'
+                });
+            } finally {
+                hideLoading();
+                isFetchingData = false;
+            }
+        }
+
+        // Show loading state
+        function showLoading() {
+            const loadingElement = document.createElement('div');
+            loadingElement.id = 'loadingOverlay';
+            loadingElement.style.position = 'fixed';
+            loadingElement.style.top = '0';
+            loadingElement.style.left = '0';
+            loadingElement.style.width = '100%';
+            loadingElement.style.height = '100%';
+            loadingElement.style.backgroundColor = 'rgba(0,0,0,0.7)';
+            loadingElement.style.display = 'flex';
+            loadingElement.style.flexDirection = 'column';
+            loadingElement.style.justifyContent = 'center';
+            loadingElement.style.alignItems = 'center';
+            loadingElement.style.zIndex = '2000';
+            loadingElement.style.color = 'white';
+            
+            const spinner = document.createElement('div');
+            spinner.className = 'loading-spinner';
+            spinner.style.width = '4rem';
+            spinner.style.height = '4rem';
+            spinner.style.borderWidth = '0.5rem';
+            
+            const text = document.createElement('div');
+            text.id = 'loadingText';
+            text.className = 'mt-3';
+            text.textContent = 'Loading data...';
+            
+            const progress = document.createElement('div');
+            progress.id = 'loadingProgress';
+            progress.className = 'mt-2 small';
+            
+            loadingElement.appendChild(spinner);
+            loadingElement.appendChild(text);
+            loadingElement.appendChild(progress);
+            document.body.appendChild(loadingElement);
+        }
+
+        // Update loading progress
+        function updateLoadingProgress(current, total) {
+            const progressElement = document.getElementById('loadingProgress');
+            if (progressElement) {
+                const percent = Math.round((current / total) * 100);
+                progressElement.textContent = `Loaded ${current.toLocaleString()} of ${total.toLocaleString()} records (${percent}%)`;
+            }
+        }
+
+        // Hide loading state
+        function hideLoading() {
+            const loadingElement = document.getElementById('loadingOverlay');
+            if (loadingElement) {
+                loadingElement.remove();
+            }
+        }
+
+        // Initialize database with sample data
+        async function initDatabase() {
+            try {
+                showLoading();
+                const response = await axios.post(`${API_BASE_URL}/api/init`);
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: `Database initialized with ${response.data.count.toLocaleString()} records`
+                });
+                fetchData();
+            } catch (error) {
+                console.error('Error initializing database:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'Failed to initialize database. Check console for details.'
+                });
+            }
+        }
+
+        // Delete all data
+        async function deleteData() {
+            try {
+                showLoading();
+                const response = await axios.delete(`${API_BASE_URL}/api/delete`);
+                
+                // Clear local data
+                allData = [];
+                filteredData = [];
+                
+                // Update UI
+                updateCharts([]);
+                updateStats();
+                updateDataPreview();
+                
+                // Show success message with option to insert new data
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: response.data.message || 'All data deleted successfully',
+                    showCancelButton: true,
+                    confirmButtonText: 'Insert New Data',
+                    cancelButtonText: 'Close'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        showUploadModal();
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error deleting data:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: error.response?.data?.message || 'Failed to delete data'
+                });
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Apply filters
+        function applyFilters() {
+            const yearFilter = $('#yearFilter').val();
+            const topicFilter = $('#topicFilter').val();
+            const sectorFilter = $('#sectorFilter').val();
+            const regionFilter = $('#regionFilter').val();
+            const countryFilter = $('#countryFilter').val();
+            const sourceFilter = $('#sourceFilter').val();
+            const pestFilter = $('#pestFilter').val();
+            const swotFilter = $('#swotFilter').val();
+            
+            filteredData = allData.filter(item => {
+                // Year filter
+                if (yearFilter && yearFilter.length > 0) {
+                    const itemYear = item.end_year ? item.end_year.toString() : '';
+                    if (!yearFilter.includes(itemYear)) return false;
+                }
+                
+                // Topic filter
+                if (topicFilter && topicFilter.length > 0 && item.topic) {
+                    if (!topicFilter.includes(item.topic)) return false;
+                }
+                
+                // Sector filter
+                if (sectorFilter && sectorFilter.length > 0 && item.sector) {
+                    if (!sectorFilter.includes(item.sector)) return false;
+                }
+                
+                // Region filter
+                if (regionFilter && regionFilter.length > 0 && item.region) {
+                    if (!regionFilter.includes(item.region)) return false;
+                }
+                
+                // Country filter
+                if (countryFilter && countryFilter.length > 0 && item.country) {
+                    if (!countryFilter.includes(item.country)) return false;
+                }
+                
+                // Source filter
+                if (sourceFilter && sourceFilter.length > 0 && item.source) {
+                    if (!sourceFilter.includes(item.source)) return false;
+                }
+                
+                // PEST filter (assuming you have a pest field in your data)
+                if (pestFilter && pestFilter.length > 0 && item.pest) {
+                    if (!pestFilter.includes(item.pest)) return false;
+                }
+                
+                // SWOT filter (assuming you have a swot field in your data)
+                if (swotFilter && swotFilter.length > 0 && item.swot) {
+                    if (!swotFilter.includes(item.swot)) return false;
+                }
+                
+                return true;
+            });
+            
+            previewPage = 1;
+            updateCharts(filteredData);
+            updateStats();
+            updateDataPreview();
+        }
+
+        // Reset all filters
+        function resetFilters() {
+            $('.form-select').val(null).trigger('change');
+            filteredData = [...allData];
+            previewPage = 1;
+            updateCharts(filteredData);
+            updateStats();
+            updateDataPreview();
+        }
+
+        // Update charts with filtered data
+        function updateCharts(data) {
+            updateIntensityChart(data);
+            updateLikelihoodChart(data);
+            updateRelevanceChart(data);
+            updateCountryChart(data);
+            updateTopicChart(data);
+        }
+
+        // Update statistics cards
+        function updateStats() {
+            const statsContainer = document.getElementById('statsContainer');
+            
+            if (filteredData.length === 0) {
+                statsContainer.innerHTML = '<div class="col-12"><p class="text-muted">No data available</p></div>';
+                return;
+            }
+            
+            // Calculate statistics
+            const intensities = filteredData.map(item => item.intensity).filter(val => val !== null && !isNaN(val));
+            const likelihoods = filteredData.map(item => item.likelihood).filter(val => val !== null && !isNaN(val));
+            const relevances = filteredData.map(item => item.relevance).filter(val => val !== null && !isNaN(val));
+            
+            const avgIntensity = intensities.length > 0 ? 
+                (intensities.reduce((a, b) => a + b, 0)) / intensities.length : 0;
+            const avgLikelihood = likelihoods.length > 0 ? 
+                (likelihoods.reduce((a, b) => a + b, 0)) / likelihoods.length : 0;
+            const avgRelevance = relevances.length > 0 ? 
+                (relevances.reduce((a, b) => a + b, 0)) / relevances.length : 0;
+            
+            statsContainer.innerHTML = `
+                <div class="col-md-4">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #4facfe, #00f2fe);">
+                        <h3>${avgIntensity.toFixed(1)}</h3>
+                        <p>Average Intensity</p>
+                        <small>${intensities.length.toLocaleString()} records</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #a8ff78, #78ffd6);">
+                        <h3>${avgLikelihood.toFixed(1)}</h3>
+                        <p>Average Likelihood</p>
+                        <small>${likelihoods.length.toLocaleString()} records</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #ff758c, #ff7eb3);">
+                        <h3>${avgRelevance.toFixed(1)}</h3>
+                        <p>Average Relevance</p>
+                        <small>${relevances.length.toLocaleString()} records</small>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Update data preview table
+        function updateDataPreview() {
+            const previewContainer = document.getElementById('dataPreview');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            
+            if (filteredData.length === 0) {
+                previewContainer.innerHTML = '<tr><td colspan="5" class="text-center py-4">No data to display</td></tr>';
+                loadMoreBtn.style.display = 'none';
+                return;
+            }
+            
+            const startIdx = 0;
+            const endIdx = Math.min(previewPage * previewPageSize, filteredData.length);
+            const pageData = filteredData.slice(startIdx, endIdx);
+            
+            let html = '';
+            pageData.forEach(item => {
+                html += `
+                    <tr>
+                        <td>${item.title || 'N/A'}</td>
+                        <td>${item.topic || 'N/A'}</td>
+                        <td>${item.country || 'N/A'}</td>
+                        <td>${item.intensity !== null ? item.intensity : 'N/A'}</td>
+                        <td>${item.likelihood !== null ? item.likelihood : 'N/A'}</td>
+                    </tr>
+                `;
+            });
+            
+            previewContainer.innerHTML = html;
+            loadMoreBtn.style.display = endIdx < filteredData.length ? 'inline-block' : 'none';
+        }
+
+        // Populate filter dropdowns with unique values
+        function populateFilters() {
+            // Reset unique values
+            uniqueValues = {
+                topics: new Set(),
+                sectors: new Set(),
+                regions: new Set(),
+                countries: new Set(),
+                sources: new Set()
+            };
+            
+            // Collect unique values from all data
+            allData.forEach(item => {
+                if (item.topic) uniqueValues.topics.add(item.topic);
+                if (item.sector) uniqueValues.sectors.add(item.sector);
+                if (item.region) uniqueValues.regions.add(item.region);
+                if (item.country) uniqueValues.countries.add(item.country);
+                if (item.source) uniqueValues.sources.add(item.source);
+            });
+            
+            // Populate all filters
+            $('#topicFilter').empty().select2({
+                data: Array.from(uniqueValues.topics).sort().map(topic => ({id: topic, text: topic})),
+                placeholder: "Select topics"
+            });
+            
+            $('#sectorFilter').empty().select2({
+                data: Array.from(uniqueValues.sectors).sort().map(sector => ({id: sector, text: sector})),
+                placeholder: "Select sectors"
+            });
+            
+            $('#regionFilter').empty().select2({
+                data: Array.from(uniqueValues.regions).sort().map(region => ({id: region, text: region})),
+                placeholder: "Select regions"
+            });
+            
+            $('#countryFilter').empty().select2({
+                data: Array.from(uniqueValues.countries).sort().map(country => ({id: country, text: country})),
+                placeholder: "Select countries"
+            });
+            
+            $('#sourceFilter').empty().select2({
+                data: Array.from(uniqueValues.sources).sort().map(source => ({id: source, text: source})),
+                placeholder: "Select sources"
+            });
+        }
+
+        // Chart creation/update functions
+        function updateIntensityChart(data) {
+            const ctx = document.getElementById('intensityChart').getContext('2d');
+            const intensities = data.map(item => item.intensity).filter(val => val !== null && !isNaN(val));
+            
+            if (intensityChart) intensityChart.destroy();
+            
+            intensityChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Array.from({length: intensities.length}, (_, i) => `Record ${i+1}`),
+                    datasets: [{
+                        label: 'Intensity',
+                        data: intensities,
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Intensity Value'
+                            }
+                        },
+                        x: {
+                            display: false // Hide x-axis labels for performance with large datasets
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Intensity: ${context.raw}`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: data.length > 1000 ? 0 : 1000 // Disable animation for large datasets
+                    }
+                }
+            });
+        }
+
+        function updateLikelihoodChart(data) {
+            const ctx = document.getElementById('likelihoodChart').getContext('2d');
+            const likelihoods = data.map(item => item.likelihood).filter(val => val !== null && !isNaN(val));
+            
+            // Bin the data for better visualization with large datasets
+            const binSize = data.length > 1000 ? Math.ceil(data.length / 50) : 1;
+            const binnedData = [];
+            for (let i = 0; i < likelihoods.length; i += binSize) {
+                const chunk = likelihoods.slice(i, i + binSize);
+                const avg = chunk.reduce((a, b) => a + b, 0) / chunk.length;
+                binnedData.push(avg);
+            }
+            
+            if (likelihoodChart) likelihoodChart.destroy();
+            
+            likelihoodChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: binnedData.length}, (_, i) => `Bin ${i+1}`),
+                    datasets: [{
+                        label: 'Likelihood',
+                        data: binnedData,
+                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Likelihood Value'
+                            }
+                        },
+                        x: {
+                            display: false
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Average Likelihood: ${context.raw.toFixed(2)} (${binSize} records)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateRelevanceChart(data) {
+            const ctx = document.getElementById('relevanceChart').getContext('2d');
+            const relevances = data.map(item => item.relevance).filter(val => val !== null && !isNaN(val));
+            
+            if (relevanceChart) relevanceChart.destroy();
+            
+            relevanceChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Min', 'Q1', 'Median', 'Q3', 'Max'],
+                    datasets: [{
+                        label: 'Relevance Distribution',
+                        data: [
+                            Math.min(...relevances),
+                            quantile(relevances, 0.25),
+                            quantile(relevances, 0.5),
+                            quantile(relevances, 0.75),
+                            Math.max(...relevances)
+                        ],
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: {
+                                display: true
+                            },
+                            suggestedMin: 0
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateCountryChart(data) {
+            const ctx = document.getElementById('countryChart').getContext('2d');
+            
+            // Count records by country
+            const countryCounts = {};
+            data.forEach(item => {
+                if (item.country) {
+                    countryCounts[item.country] = (countryCounts[item.country] || 0) + 1;
+                }
+            });
+            
+            // Sort and limit to top 10 countries
+            const sortedCountries = Object.entries(countryCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+            
+            const countries = sortedCountries.map(item => item[0]);
+            const counts = sortedCountries.map(item => item[1]);
+            
+            if (countryChart) countryChart.destroy();
+            
+            countryChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: countries,
+                    datasets: [{
+                        data: counts,
+                        backgroundColor: [
+                            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+                            '#FF9F40', '#8AC24A', '#607D8B', '#E91E63', '#3F51B5'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const percentage = Math.round(context.raw * 100 / data.length);
+                                    return `${context.label}: ${context.raw} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateTopicChart(data) {
+            const ctx = document.getElementById('topicChart').getContext('2d');
+            
+            // Count records by topic
+            const topicCounts = {};
+            data.forEach(item => {
+                if (item.topic) {
+                    topicCounts[item.topic] = (topicCounts[item.topic] || 0) + 1;
+                }
+            });
+            
+            // Sort and limit to top 15 topics
+            const sortedTopics = Object.entries(topicCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 15);
+            
+            const topics = sortedTopics.map(item => item[0]);
+            const counts = sortedTopics.map(item => item[1]);
+            
+            if (topicChart) topicChart.destroy();
+            
+            topicChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: topics,
+                    datasets: [{
+                        label: 'Number of Records',
+                        data: counts,
+                        backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y', // Horizontal bar chart
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Records'
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                autoSkip: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.raw} records`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Helper function to calculate quantiles
+        function quantile(arr, q) {
+            const sorted = [...arr].sort((a, b) => a - b);
+            const pos = (sorted.length - 1) * q;
+            const base = Math.floor(pos);
+            const rest = pos - base;
+            
+            if (sorted[base + 1] !== undefined) {
+                return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
+            } else {
+                return sorted[base];
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+# Core Requirements
+Flask==2.3.2
+Flask-Cors==4.0.0
+pymongo==4.5.0
+python-dotenv==1.0.0
+gunicorn==21.2.0
+
+# Data Processing
+pandas==2.0.3
+numpy==1.24.3
+
+# API Development
+marshmallow==3.19.0
+flask-restx==1.1.0
+
+# Authentication (Optional)
+pyjwt==2.7.0
+bcrypt==4.0.1
+
+# Development
+pytest==7.4.0
+python-dotenv==1.0.0
+requests==2.31.0

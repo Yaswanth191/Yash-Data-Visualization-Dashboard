@@ -1,0 +1,36 @@
+# .gitignore for Yash Dashboard
+
+# Core ignores
+.env
+jsondata.json  # Ignore the original data file
+
+# Backend ignores
+backend/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# System ignores
+.DS_Store
+Thumbs.db
+
+# IDE ignores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
+logs/
+
+# Node.js dependencies (Frontend)
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+# Docker ignores (Avoid unnecessary files in Docker builds)
+.dockerignore
+docker-compose.override.yml
+docker-compose.override.yaml
