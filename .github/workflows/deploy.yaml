@@ -1,0 +1,34 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main  # Runs the workflow when you push to main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker
+        run: |
+          docker --version
+
+      - name: Build and Push Docker Image
+        run: |
+          echo "${{ secrets.AWS_ACCESS_KEY_ID }}" | docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_URI }}
+          docker build -t yash-dashboard .
+          docker tag yash-dashboard:latest ${{ secrets.AWS_ECR_URI }}/yash-dashboard:latest
+          docker push ${{ secrets.AWS_ECR_URI }}/yash-dashboard:latest
+
+      - name: Deploy to AWS
+        run: |
+          ssh -o StrictHostKeyChecking=no -i "${{ secrets.AWS_SSH_KEY }}" ubuntu@${{ secrets.AWS_EC2_IP }} << 'EOF'
+            docker pull ${{ secrets.AWS_ECR_URI }}/yash-dashboard:latest
+            docker stop yash-dashboard || true
+            docker rm yash-dashboard || true
+            docker run -d -p 80:80 --name yash-dashboard ${{ secrets.AWS_ECR_URI }}/yash-dashboard:latest
+          EOF
